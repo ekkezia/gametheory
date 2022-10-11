@@ -1,0 +1,132 @@
+* {
+    font-family: Helvetica, sans-serif;
+}
+
+body {
+    margin: 0;
+    font-family: "Times", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.story {
+    /* display: flex; */
+    display: none;
+}
+
+.form {
+    height: 50%;
+    width: 20%;
+    background-color: orange;
+    font-size: 10px;
+}
+
+form {
+    margin-top: 5%;
+}
+
+.flex {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.column {
+    display: flex;
+    flex-wrap: nowrap;
+    margin-left: 0%;
+    height: 300px;
+    overflow-x: auto;
+    width: auto;
+    font-size: 10px;
+}
+
+.scroll>p {
+    width: 1000px;
+    margin: 10px;
+}
+
+.column2 {
+    flex: 50%;
+    height: 100%;
+}
+
+.column>div {
+    border-bottom: 1px solid red;
+    border-right: 1px solid red;
+}
+
+.menuBar {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+}
+
+.menu {
+    height: 100%;
+    margin-left: 90%;
+    font-size: 1.5rem;
+    z-index: 999;
+    cursor: move;
+}
+
+.menu>div {
+    margin-left: 30%;
+}
+
+.menu>div:hover {
+    border-bottom: 1px solid red;
+}
+
+#reply {
+    position: relative;
+    left: 0;
+}
+
+#game {
+    width: 1200px;
+    height: 50%;
+    background-color: green;
+}
+
+#game>h1 {
+    writing-mode: vertical-rl;
+}
+
+#game>div {
+    margin-top: -10%;
+}
+
+#theory {
+    width: 500px;
+    height: 20%;
+    background-color: blue;
+}
+
+#theory>h1 {
+    writing-mode: vertical-rl;
+}
+
+#stats {
+    width: 500px;
+    height: 20%;
+    background-color: red;
+}
+
+#stats>h1 {
+    writing-mode: vertical-rl;
+}
+
+#team {
+    width: 500px;
+    height: 20%;
+    background-color: grey;
+    left: 0;
+}
+
+#team>h1 {
+    writing-mode: vertical-rl;
+}
+
+#team>div {
+    margin-top: -5%;
+}

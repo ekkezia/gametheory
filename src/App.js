@@ -1,54 +1,26 @@
-import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import Content from './components/Content';
-import Background from './components/Background';
-import Intro from './components/Intro';
-import React, { Component, useState, useEffect, useRef, useContext } from 'react';
-import db from './components/utils/firebase.config';
-import { collection, addDoc, setDoc, getDocs, doc, onSnapshot } from "firebase/firestore";
-import { allSubsInfo, getSubmission } from './components/utils/allSubmission';
-import SubmitContext from './components/utils/submitContext';
+"use client";
 
-function App() {
-  const [allSubs, setAllSubs] = useState(allSubsInfo);
-  const [currentImg, setCurrentImg] = useState(allSubsInfo);
-  const [submitted, hadSubmitted] = useState(false);
+import { useEffect, useState } from "react";
+import Background from "./components/background";
+import Footer from "./components/footer";
+import SubmitContext from './contexts/submit-context';
+import { getSubmission } from "./actions/get-submission";
 
-  let responseArray = [];
-  let n = 'a';
+export default function Page() {
+  const [hadSubmitted, setHadSubmitted] = useState(false);
+
+  const [data, setData] = useState();
 
   useEffect(() => {
-    let responseArray = [];
-    getDocs(collection(db, "Responses"))
-      .then(response => {
-        response.forEach((doc) => {
-          responseArray.push(doc.data());
-          setAllSubs(responseArray);
-        });
-      });
-
-
-      setCurrentImg(allSubs);
-      console.log('all sub', currentImg);
-
-  }, []);
-
-
-  // let img = allSubs[0].pic;
-  // console.log('check', allSubs[0].name);
+    getSubmission().then((res) => {
+      setData(res);
+    });
+  }, [hadSubmitted]);
 
   return (
-    <SubmitContext.Provider value={{ submitted, hadSubmitted }}>
-    <div className="App">
-        <Background />
-        <Content />
-        <Intro allSubmissions={allSubs} />
-        <Header />
-        <Footer />
-      </div>
+    <SubmitContext.Provider value={{ hadSubmitted, setHadSubmitted }}>
+      <Background data={data} />
+      <Footer data={data} />
     </SubmitContext.Provider>
   );
 }
-
-export default App;

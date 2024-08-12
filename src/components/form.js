@@ -1,161 +1,192 @@
-import React, { Component, useContext } from 'react';
-import { useState, useEffect, useRef } from "react";
-import { collection, addDoc, setDoc, getDocs, doc, onSnapshot } from "firebase/firestore";
-import { makeStyles, withTheme } from '@material-ui/core';
-import db from './utils/firebase.config';
-import { pics } from './Pics';
-import { timestamp, serverTimestamp } from './utils/serverTimestamp';
-import SubmitContext from './utils/submitContext';
+import React, { useContext, useState } from "react";
+import PropTypes from "prop-types";
+import styled from "styled-components";
+import { RULES } from "../shared";
+import SubmitContext from "../contexts/submit-context";
+import { postSubmission } from "../actions/post-submission";
 
-const useStyles = makeStyles((theme) => ({
-  container: {
-    color: 'white',
-  },
-  name: {
-    borderRadius: '85px',
-    padding: '4%'
-  },
-  submitBtn: {
-    margin: '16px',
-    padding: '5%',
-    borderRadius: '20px',
-    background: 'black',
-    color: 'white',
-    opacity: 0.2,
-    transition: 'all 500ms ease'
-  },
-  enableBtnClass: {
-    opacity: 1,
-    transition: 'all 500ms ease'
-  },
-  p: {
-    color: 'white'
+const Text = styled.div`
+  color: #000;
+  font-size: 0.85rem;
+`;
+
+const InputContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+`;
+
+const FormInput = styled.input`
+  border: none;
+  background: none;
+  border-bottom: 1px solid #7a7a7a;
+  font-size: 0.85rem;
+  padding: 8px;
+`;
+
+const Button = styled.button`
+  margin-top: 16px;
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 0;
+  border: 1px solid #000;
+  background: none;
+  color: #000;
+  cursor: pointer;
+  box-shadow: none;
+  &:hover {
+    background: #ffffff;
+    color: #000000;
   }
-}));
-
-const imgArray = [];
-for (let i = 0; i < 10; i++) {
-  imgArray.push('./assets/' + i + '.jpg');
-}
-
-
-function Form() {
-  const classes = useStyles();
-
-  const clickMenu = useRef(null);
-  const form = useRef(null);
-
-  const { hadSubmitted } = useContext(SubmitContext);
-
-  const [enableBtnClass, setEnableBtnClass] = useState(null);
-  const [toggleBtnEnabler, setToggleBtnEnabler] = useState(true);
-
-  const [name, setName] = useState("");
-  const [pic, setPic] = useState("");
-  const [message, setMessage] = useState("");
-  let [currentData, setCurrentData] = useState({ name: "", pic: "" });
-  let [regName, setRegName] = useState("");
-  let [regIg, setRegIg] = useState("");
-  let [regPic, setRegPic] = useState(0);
-  let [subs, setSubs] = useState([]);
-  let [ordered, setOrdered] = useState([]);
-  let allSubs = [];
-  let orderedPics = [];
-  const picsOptions = ['https://imgur.com/ONukpTh.png', 'https://imgur.com/rY8d0Ye.png', 'https://imgur.com/xXAYEcH.png', 'https://imgur.com/aWS9TAH.png']
-
-  useEffect(() => {
-    // CURRENT DATA
-    const unsub = onSnapshot(doc(db, "Response", "rGKZUj2fF5JpWiYZmCDJ"), (doc) => {
-      console.log("Current data: ", doc.data());
-      setCurrentData = doc.data();
-      console.log('name', currentData.name);
-    });
-  });
-
-  function answerPic(e) {
-
-    if (e.target.id == "answer1") {
-      setPic("1");
-      document.getElementById('answer1button').style.backgroundColor = "black";
-      document.getElementById('answer2button').style.backgroundColor = "white";
-
-    }
-    else if (e.target.id == "answer2") {
-      setPic("2");
-      document.getElementById('answer2button').style.backgroundColor = "black";
-      document.getElementById('answer1button').style.backgroundColor = "white";
-
-    }
-    console.log('answer', e.target.id)
+  &:disabled {
+    opacity: 0.1;
   }
+`;
 
-  let handleSubmit = async (e) => {
-    e.preventDefault();
-    hadSubmitted(true);
-    const elementsArray = [...e.target.elements];
-    console.log('elementsArray', elementsArray);
+const FormContainer = styled.form`
+  position: relative;
+  opacity: 1;
+`;
 
-    try {
-      const data = {
-        name: name,
-        pic: pic,
-        time: timestamp,
-      }
+const Blur = styled.div`
+  opacity: 1;
+  .blur {
+    opacity: 0.1;
+  }
+`;
 
-      const now = serverTimestamp.getTime();
+const WarningText = styled.div`
+  position: absolute;
+  top: 0;
+  opacity: 1 !important;
+  color: #ff0000;
+`;
 
-      await setDoc(doc(db, "Responses", `${now}`), data);
+const GameTheoryForm = ({ lastSubmission }) => {
+  const { setHadSubmitted } = useContext(SubmitContext);
 
-    } catch (e) {
-      console.error("Error adding document: ", e);
+  const checkLocalStorage =
+    typeof window !== "undefined"
+      ? localStorage.getItem("username_is_submitted")
+      : false;
+
+  const [userAlreadySubmitted, setUserAlreadySubmitted] =
+    useState(checkLocalStorage);
+
+  const [loading, setLoading] = useState("idle");
+
+  const getGameResult = (currDecision) => {
+    let lastSubmissionResult = lastSubmission.gameresult;
+    if (lastSubmission.decision === "cooperate") {
+      if (currDecision === "cooperate") return lastSubmissionResult + RULES.c_c;
+      else if (currDecision === "betray")
+        return lastSubmissionResult + RULES.c_b;
+    } else if (lastSubmission.decision === "betray") {
+      if (currDecision === "cooperate") return lastSubmissionResult + RULES.b_c;
+      else if (currDecision === "betray")
+        return lastSubmissionResult + RULES.b_b;
     }
   };
 
-  function showGame() {
-    console.log('show game')
-    clickMenu.current.style.display = "block";
-  }
-  function showReply() {
-    console.log('show repl')
-    form.current.style.display = "block";
-  }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
+    const form = document.querySelector("form");
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (data) {
+      setLoading("loading");
+      await postSubmission(
+        data.name,
+        data.decision,
+        getGameResult(data.decision.toString())
+      ).then((res) => {
+        if (res) {
+          setHadSubmitted(true);
+          setTimeout(() => {
+            setLoading("success");
+          }, 1000);
+        } else {
+          setLoading("fail");
+        }
+      });
 
-  // To enable submit button
-  useEffect(() => {
-    if (name && pic !== null) {
-      setEnableBtnClass(classes.enableBtnClass);
-      setToggleBtnEnabler(false);
-      console.log('changes', `${enableBtnClass}`)
+      setUserAlreadySubmitted(checkLocalStorage);
     }
-  }, [name]);
+  };
 
   return (
-    <div className={classes.component}>
-      <div className="menu" id="game" onClick={showGame}>
-        <div className="flex">
-          <div className="form"><form onSubmit={handleSubmit}>
-            <input className={classes.name}
-              type="text"
-              value={name} id='name'
-              placeholder="Name"
-              onChange={(e) => setName(e.target.value)}
+    <FormContainer id="game-theory" method="post" onSubmit={handleSubmit}>
+      {userAlreadySubmitted && (
+        <WarningText>
+          you already submitted! take turn with others please.. share it on your
+          ig or sumthing!
+        </WarningText>
+      )}
+
+      <Blur className={userAlreadySubmitted && "blur"}>
+        <Text>
+          In response to the cooperation/betrayal from the previous user, I,
+        </Text>
+        <InputContainer>
+          <FormInput
+            type="text"
+            placeholder="IG Username / Your Name @ekezia"
+            aria-label="Name"
+            name="name"
+          />
+        </InputContainer>
+        <Text style={{ marginBottom: 16 }}>am consciously deciding to</Text>
+
+        <div>
+          <div>
+            <div>
+              <input
+                type="radio"
+                id="answer1"
+                name="decision"
+                value="cooperate"
+              />
+              <div className="text-sm font-bold">cooperate</div>
+            </div>
+            <img
+              id="answer1"
+              src="https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/cooperate.jpg"
+              alt="answer1"
+              width="150px"
+              height="100px"
             />
-
-            <input className={`${classes.submitBtn} ${enableBtnClass}`} id="submit" name="submit" type="submit" value="Submit" onSubmit={handleSubmit} disabled={toggleBtnEnabler} />
-
-            <div className="message">{message ? <p>{message}</p> : null}</div>
-            <div><img src={pics[0]} width='100px' height='100px' /></div>
-            <div className={classes.p}>Choice of Answers:</div>
-            <div id="answer1button" onClick={() => hadSubmitted(true)}><img id="answer1" src="https://imgur.com/b0ZYobY.png" width='100px' height='100px' /></div>
-            <div id="answer2button" onClick={answerPic}><img id="answer2" src="https://imgur.com/ONukpTh.png" width='100px' height='100px' /></div>
-            <div><p>Choosing Answer {pic}</p></div>
-          </form>
+          </div>
+          <div>
+            <div className="text-sm">or</div>
+          </div>
+          <div>
+            <div className="flex gap-1">
+              <input type="radio" id="answer2" name="decision" value="betray" />
+              <div className="text-sm font-bold">betray</div>
+            </div>
+            <img
+              id="answer2"
+              src="https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/betray.jpg"
+              alt="answer2"
+              width="150px"
+              height="100px"
+            />
           </div>
         </div>
-      </div>
-    </div>
+        <Button type="submit" disabled={userAlreadySubmitted ? true : false}>
+          {loading === "idle" && "Submit"}
+          {loading === "loading" && "Submitting..."}
+          {loading === "success" && "Submitted"}
+          {loading === "fail" && "Failed Submitting"}
+        </Button>
+      </Blur>
+    </FormContainer>
   );
-}
+};
 
-export default Form;
+GameTheoryForm.propTypes = {
+  lastSubmission: PropTypes.object.isRequired,
+};
+
+export default GameTheoryForm;

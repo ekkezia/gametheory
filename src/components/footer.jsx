@@ -18,7 +18,7 @@ const FooterContainer = styled.div`
   z-index: 20;
   width: ${CARD_WIDTH};
   height: 100vh;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.99);
   border-radius: 200px 200px 0% 0%;
   backdrop-filter: blur(10px);
   text-align: center;

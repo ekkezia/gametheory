@@ -1,9 +1,8 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 import { RULES } from "../shared";
-import SubmitContext from "../contexts/submit-context";
 import { mutate } from "swr";
 
 const Text = styled.div`
@@ -195,7 +194,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
         </div>
         <Button
           type="submit"
-          disabled={userAlreadySubmitted || loading != "idle"}
+          disabled={userAlreadySubmitted || loading !== "idle"}
         >
           {loading === "idle" && "Submit"}
           {loading === "loading" && "Submitting..."}

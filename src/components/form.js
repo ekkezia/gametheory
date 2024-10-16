@@ -1,13 +1,15 @@
 import React, { useContext, useState } from "react";
+import axios from "axios";
 import PropTypes from "prop-types";
 import styled from "styled-components";
 import { RULES } from "../shared";
 import SubmitContext from "../contexts/submit-context";
-import { postSubmission } from "../actions/post-submission";
+import { mutate } from "swr";
 
 const Text = styled.div`
   color: #000;
   font-size: 0.85rem;
+  line-height: 1.5rem;
 `;
 
 const InputContainer = styled.div`
@@ -18,10 +20,11 @@ const InputContainer = styled.div`
 
 const FormInput = styled.input`
   border: none;
-  background: none;
-  border-bottom: 1px solid #7a7a7a;
-  font-size: 0.85rem;
-  padding: 8px;
+  background: #d9d9d9;
+  font-size: 1.5rem;
+  padding: 2px;
+  text-align: center;
+  color: #000000;
 `;
 
 const Button = styled.button`
@@ -51,9 +54,22 @@ const FormContainer = styled.form`
 
 const Blur = styled.div`
   opacity: 1;
-  .blur {
+  &.blur {
     opacity: 0.1;
   }
+`;
+const OptionContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-items: center;
+  align-items: center;
+`;
+const Option = styled.div`
+  display: flex;
+`;
+const OptionText = styled.div`
+  color: #000000;
+  font-size: 1.5rem;
 `;
 
 const WarningText = styled.div`
@@ -61,11 +77,10 @@ const WarningText = styled.div`
   top: 0;
   opacity: 1 !important;
   color: #ff0000;
+  font-size: 1.5rem;
 `;
 
 const GameTheoryForm = ({ lastSubmission }) => {
-  const { setHadSubmitted } = useContext(SubmitContext);
-
   const checkLocalStorage =
     typeof window !== "undefined"
       ? localStorage.getItem("username_is_submitted")
@@ -96,20 +111,26 @@ const GameTheoryForm = ({ lastSubmission }) => {
     const data = Object.fromEntries(new FormData(form).entries());
     if (data) {
       setLoading("loading");
-      await postSubmission(
-        data.name,
-        data.decision,
-        getGameResult(data.decision.toString())
-      ).then((res) => {
-        if (res) {
-          setHadSubmitted(true);
-          setTimeout(() => {
-            setLoading("success");
-          }, 1000);
-        } else {
+
+      axios
+        .post(process.env.REACT_APP_BACKEND_API_URL, {
+          name: data.name,
+          decision: data.decision,
+          gameresult: getGameResult(data.decision),
+        })
+        .then((response) => {
+          console.log("response", response);
+          setLoading("success");
+          mutate(process.env.REACT_APP_BACKEND_API_URL); // revalidate backend
+          localStorage.setItem("username_is_submitted", true);
+        })
+        .catch((error) => {
+          console.error(error);
           setLoading("fail");
-        }
-      });
+          setTimeout(() => {
+            setLoading("idle");
+          }, [3000]);
+        });
 
       setUserAlreadySubmitted(checkLocalStorage);
     }
@@ -139,16 +160,16 @@ const GameTheoryForm = ({ lastSubmission }) => {
         <Text style={{ marginBottom: 16 }}>am consciously deciding to</Text>
 
         <div>
-          <div>
-            <div>
+          <OptionContainer>
+            <Option>
               <input
                 type="radio"
                 id="answer1"
                 name="decision"
                 value="cooperate"
               />
-              <div className="text-sm font-bold">cooperate</div>
-            </div>
+              <OptionText style={{ color: "blue" }}>cooperate</OptionText>
+            </Option>
             <img
               id="answer1"
               src="https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/cooperate.jpg"
@@ -156,15 +177,13 @@ const GameTheoryForm = ({ lastSubmission }) => {
               width="150px"
               height="100px"
             />
-          </div>
-          <div>
-            <div className="text-sm">or</div>
-          </div>
-          <div>
-            <div className="flex gap-1">
+          </OptionContainer>
+          <Text>or</Text>
+          <OptionContainer>
+            <Option>
               <input type="radio" id="answer2" name="decision" value="betray" />
-              <div className="text-sm font-bold">betray</div>
-            </div>
+              <OptionText style={{ color: "red" }}>betray</OptionText>
+            </Option>
             <img
               id="answer2"
               src="https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/betray.jpg"
@@ -172,13 +191,17 @@ const GameTheoryForm = ({ lastSubmission }) => {
               width="150px"
               height="100px"
             />
-          </div>
+          </OptionContainer>
         </div>
-        <Button type="submit" disabled={userAlreadySubmitted ? true : false}>
+        <Button
+          type="submit"
+          disabled={userAlreadySubmitted || loading != "idle"}
+        >
           {loading === "idle" && "Submit"}
           {loading === "loading" && "Submitting..."}
-          {loading === "success" && "Submitted"}
-          {loading === "fail" && "Failed Submitting"}
+          {loading === "success" &&
+            "Submitted, check the image board to see your result!"}
+          {loading === "fail" && "Failed Submitting 😭 Try again?"}
         </Button>
       </Blur>
     </FormContainer>

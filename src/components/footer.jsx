@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import PropTypes from "prop-types";
 import GameTheoryForm from "./form";
 import styled from "styled-components";
@@ -98,18 +98,9 @@ const Text = styled.div`
 `;
 
 const Footer = ({ data }) => {
-  const [hoverClass, setHoverClass] = useState(false);
-
   return (
     <Container>
-      <FooterContainer
-        onMouseEnter={() => {
-          setHoverClass(true);
-        }}
-        onMouseLeave={() => {
-          setHoverClass(false);
-        }}
-      >
+      <FooterContainer>
         <h1 className="title">game theory</h1>
         <div className="contentContainer">
           <Text className="description">
@@ -168,7 +159,14 @@ const Footer = ({ data }) => {
 };
 
 Footer.propTypes = {
-  data: PropTypes.object.isRequired,
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      decision: PropTypes.oneOf(["betray", "cooperate"]).isRequired,
+      gameresult: PropTypes.number.isRequired,
+      time: PropTypes.any, // This can be refined depending on what 'time' is
+    })
+  ),
 };
 
 export default Footer;

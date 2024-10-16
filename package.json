@@ -2,6 +2,7 @@
     "name": "gametheory",
     "version": "0.1.0",
     "private": true,
+    "proxy": "https://gametheory-backend.onrender.com",
     "dependencies": {
         "@mui/material": "^5.10.9",
         "@supabase/supabase-js": "^2.45.1",

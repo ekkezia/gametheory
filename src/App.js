@@ -6,7 +6,10 @@ import useSWR from "swr";
 import axiosInstance from "./axios/config";
 import styled from "styled-components";
 
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
+const fetcher = (url) =>
+  axiosInstance
+    .get(url, { headers: { "Cache-Control": "no-cache" } })
+    .then((res) => res.data);
 
 const StyledImageContainer = styled.div`
   display: ${(props) => (props.$display ? "flex" : "none")};
@@ -28,11 +31,13 @@ const StyledImage = styled.img`
   object-fit: contain;
   aspect-ratio: 3/2;
 `;
+
 export default function Page() {
-  const { data, isValidating } = useSWR(
-    process.env.REACT_APP_BACKEND_API_URL,
-    fetcher
-  );
+  const { data, isValidating } = useSWR("/", fetcher, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    dedupingInterval: 0, // always revalidate
+  });
 
   const [hadSubmitted, setHadSubmitted] = useState(false);
   const [image, setImage] = useState(null);

@@ -67,7 +67,7 @@ const DecisionSpan = styled.span`
 `;
 
 const Background = ({ data, loading }) => {
-  const { hadSubmitted } = useContext(SubmitContext);
+  const { hadSubmitted, setImage } = useContext(SubmitContext);
 
   const calculateImageNumber = (imageNo) => {
     const equilibrium = Math.ceil((PICS_OPTIONS.length - 1) / 2);
@@ -105,21 +105,26 @@ const Background = ({ data, loading }) => {
               }
               followCursor
             >
-              <StyledLink
+              {/* <StyledLink
                 href={`https://instagram.com/${data[idx].name}`}
                 target="_blank"
-              >
-                <StyledImage
-                  src={
+              > */}
+              <StyledImage
+                src={
+                  PICS_OPTIONS[calculateImageNumber(data[idx].gameresult) ?? 0]
+                }
+                alt={`pic-${idx + 1}-${data[idx].decision}-${
+                  idx !== 0 ? data[idx].name : ""
+                }-${calculateImageNumber(data[idx].gameresult)}`}
+                onClick={() =>
+                  setImage(
                     PICS_OPTIONS[
                       calculateImageNumber(data[idx].gameresult) ?? 0
                     ]
-                  }
-                  alt={`pic-${idx + 1}-${data[idx].decision}-${
-                    idx !== 0 ? data[idx].name : ""
-                  }-${calculateImageNumber(data[idx].gameresult)}`}
-                />
-              </StyledLink>
+                  )
+                }
+              />
+              {/* </StyledLink> */}
             </Tooltip>
           ) : loading ? (
             "⏳"

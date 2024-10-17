@@ -33,9 +33,7 @@ const StyledImage = styled.img`
 `;
 
 export default function Page() {
-  const { data, isValidating } = useSWR("/", fetcher, {
-    refreshInterval: 1000,
-  });
+  const { data, isValidating } = useSWR("/", fetcher);
 
   const [hadSubmitted, setHadSubmitted] = useState(false);
   const [image, setImage] = useState(null);

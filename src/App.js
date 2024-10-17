@@ -34,9 +34,7 @@ const StyledImage = styled.img`
 
 export default function Page() {
   const { data, isValidating } = useSWR("/", fetcher, {
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
-    dedupingInterval: 0, // always revalidate
+    refreshInterval: 1000,
   });
 
   const [hadSubmitted, setHadSubmitted] = useState(false);

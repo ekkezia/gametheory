@@ -1,10 +1,10 @@
-import React from "react";
-import PropTypes from "prop-types";
-import GameTheoryForm from "./form";
-import styled from "styled-components";
-import { CARD_WIDTH, CARD_WIDTH_SM } from "../shared";
+import React from 'react';
+import PropTypes from 'prop-types';
+import GameTheoryForm from './form';
+import styled from 'styled-components';
+import { CARD_WIDTH, CARD_WIDTH_SM } from '../shared';
 
-export const TITLE_HEIGHT = "20vh";
+export const TITLE_HEIGHT = '20vh';
 
 const Container = styled.div`
   position: relative;
@@ -63,6 +63,9 @@ const FooterContainer = styled.div`
     .contentContainer {
       transform: translateY(0);
       transition: all 1s;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     .title {
@@ -101,51 +104,53 @@ const Footer = ({ data }) => {
   return (
     <Container>
       <FooterContainer>
-        <h1 className="title">game theory</h1>
-        <div className="contentContainer">
-          <Text className="description">
+        <h1 className='title'>game theory</h1>
+        <div className='contentContainer'>
+          <Text className='description'>
             this is a game where you are invited to play to cooperate or to
             betray.
           </Text>
-          {data ? (
+          <GameTheoryForm lastSubmission={1} />
+
+          {/* {data ? (
             <GameTheoryForm lastSubmission={data[data.length - 1]} />
           ) : (
-            "Loading..."
-          )}
-          <div className="credit">
+            'Loading...'
+          )} */}
+          <div className='credit'>
             <Text>
-              concept by{" "}
+              concept by{' '}
               <a
-                href="https://instagram.com/ekezia"
-                target="_blank"
-                rel="noopener noreferrer"
+                href='https://instagram.com/ekezia'
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 ekezia
-              </a>{" "}
-              +{" "}
+              </a>{' '}
+              +{' '}
               <a
-                href="https://instagram.com/marco1ee"
-                target="_blank"
-                rel="noopener noreferrer"
+                href='https://instagram.com/marco1ee'
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 marco1ee
               </a>
               .
             </Text>
             <Text>
-              player01 is{" "}
+              player01 is{' '}
               <a
-                href="https://instagram.com/ugh.isha"
-                target="_blank"
-                rel="noopener noreferrer"
+                href='https://instagram.com/bby.diwata'
+                target='_blank'
+                rel='noopener noreferrer'
               >
-                ugh.isha
+                bby.diwata
               </a>
-              , player02 is{" "}
+              , player02 is{' '}
               <a
-                href="https://instagram.com/parano0dle"
-                target="_blank"
-                rel="noopener noreferrer"
+                href='https://instagram.com/parano0dle'
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 parano0dle
               </a>
@@ -162,10 +167,10 @@ Footer.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
-      decision: PropTypes.oneOf(["betray", "cooperate"]).isRequired,
+      decision: PropTypes.oneOf(['betray', 'cooperate']).isRequired,
       gameresult: PropTypes.number.isRequired,
       time: PropTypes.any, // This can be refined depending on what 'time' is
-    })
+    }),
   ),
 };
 

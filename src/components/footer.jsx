@@ -110,13 +110,11 @@ const Footer = ({ data }) => {
             this is a game where you are invited to play to cooperate or to
             betray.
           </Text>
-          <GameTheoryForm lastSubmission={1} />
-
-          {/* {data ? (
+          {data ? (
             <GameTheoryForm lastSubmission={data[data.length - 1]} />
           ) : (
             'Loading...'
-          )} */}
+          )}
           <div className='credit'>
             <Text>
               concept by{' '}

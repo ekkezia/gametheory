@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { RULES } from '../shared';
 import { mutate } from 'swr';
+import { supabase } from '../supabase/config';
 
 const Text = styled.div`
   color: #000;
@@ -43,6 +44,11 @@ const Button = styled.button`
   }
   &:disabled {
     opacity: 0.1;
+    cursor: disabled;
+    &:hover {
+      background: none;
+      color: #000;
+    }
   }
 `;
 
@@ -57,7 +63,7 @@ const Blur = styled.div`
     opacity: 0.1;
   }
 `;
-const OptionContainer = styled.div`
+const OptionContainer = styled.label`
   display: flex;
   flex-direction: column;
   justify-items: center;
@@ -67,29 +73,45 @@ const OptionContainer = styled.div`
 `;
 const Option = styled.div`
   display: flex;
+  cursor: pointer;
 `;
 
 const OptionImageContainer = styled.div`
   position: relative;
+  cursor: pointer;
 `;
+
 const OptionImage = styled.img`
   position: absolute;
   transform: translateX(-50%);
+  opacity: 1;
 `;
 
 const Circle = styled.svg`
   position: absolute;
   transform: translateX(-50%);
-  opacity: ${(props) => (props.isSelected ? 1 : 0)};
+  opacity: 0;
   &:hover {
-    opacity: 0.3;
+    opacity: 0.3 !important;
+  }
+`;
+
+const Input = styled.input`
+  visibility: hidden;
+  &:checked ~ ${Circle} {
+    opacity: 1;
   }
 `;
 
 const OptionText = styled.div`
-  color: #000000;
+  color: #fff;
   font-size: 0.85rem;
   margin-bottom: 2px;
+  padding: 2px;
+  border-radius: 3px;
+  &:hover {
+    opacity: 0.6;
+  }
 `;
 
 const WarningText = styled.div`
@@ -97,7 +119,7 @@ const WarningText = styled.div`
   top: 0;
   opacity: 1 !important;
   color: #ff0000;
-  font-size: 1.5rem;
+  font-size: 0.85rem;
 `;
 
 const GameTheoryForm = ({ lastSubmission }) => {
@@ -110,11 +132,6 @@ const GameTheoryForm = ({ lastSubmission }) => {
     useState(checkLocalStorage);
 
   const [loading, setLoading] = useState('idle');
-  const [selectedOption, setSelectedOption] = useState('');
-
-  const handleClickOption = (option) => {
-    setSelectedOption(option);
-  };
 
   const getGameResult = (currDecision) => {
     let lastSubmissionResult = lastSubmission.gameresult;
@@ -133,29 +150,57 @@ const GameTheoryForm = ({ lastSubmission }) => {
     event.preventDefault();
 
     const form = document.querySelector('form');
-    const data = Object.fromEntries(new FormData(form).entries());
-    if (data) {
+    const formData = Object.fromEntries(new FormData(form).entries());
+    if (formData && formData.decision !== null) {
       setLoading('loading');
 
-      axios
-        .post(process.env.REACT_APP_BACKEND_API_URL, {
-          name: data.name,
-          decision: data.decision,
-          gameresult: getGameResult(data.decision),
-        })
-        .then((response) => {
-          console.log('response', response);
-          setLoading('success');
-          mutate(process.env.REACT_APP_BACKEND_API_URL); // revalidate backend
-          localStorage.setItem('username_is_submitted', true);
-        })
-        .catch((error) => {
-          console.error(error);
-          setLoading('fail');
-          setTimeout(() => {
-            setLoading('idle');
-          }, [3000]);
-        });
+      try {
+        const { data, error } = await supabase
+          .from('gametheory')
+          .insert([
+            {
+              name: formData.name,
+              decision: formData.decision,
+              gameresult: getGameResult(formData.decision),
+            },
+          ])
+          .select();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        console.log('Successfully submitted', data);
+        setLoading('success');
+        mutate('/');
+        localStorage.setItem('username_is_submitted', true);
+      } catch (error) {
+        console.error(error);
+        setLoading('fail');
+        setTimeout(() => {
+          setLoading('idle');
+        }, 3000);
+      }
+
+      // axios
+      //   .post(process.env.REACT_APP_BACKEND_API_URL, {
+      //     name: data.name,
+      //     decision: data.decision,
+      //     gameresult: getGameResult(data.decision),
+      //   })
+      //   .then((response) => {
+      //     console.log('response', response);
+      //     setLoading('success');
+      //     mutate(process.env.REACT_APP_BACKEND_API_URL); // revalidate backend
+      //     localStorage.setItem('username_is_submitted', true);
+      //   })
+      //   .catch((error) => {
+      //     console.error(error);
+      //     setLoading('fail');
+      //     setTimeout(() => {
+      //       setLoading('idle');
+      //     }, [3000]);
+      //   });
 
       setUserAlreadySubmitted(checkLocalStorage);
     }
@@ -172,7 +217,23 @@ const GameTheoryForm = ({ lastSubmission }) => {
 
       <Blur className={userAlreadySubmitted && 'blur'}>
         <Text>
-          In response to the cooperation/betrayal from the previous user, I,
+          In response to the{' '}
+          <span
+            style={{
+              color: 'white',
+              background:
+                lastSubmission.decision === 'cooperate' ? 'blue' : 'red',
+            }}
+          >
+            {lastSubmission.decision === 'cooperate'
+              ? 'cooperation'
+              : 'betrayal'}
+          </span>
+          &nbsp; of the previous user --{' '}
+          <span style={{ color: 'white', background: 'black' }}>
+            {lastSubmission.name}
+          </span>
+          , I,
         </Text>
         <InputContainer>
           <FormInput
@@ -185,19 +246,20 @@ const GameTheoryForm = ({ lastSubmission }) => {
         <Text style={{ marginBottom: 16 }}>am consciously deciding to</Text>
 
         <div>
-          <OptionContainer onClick={() => handleClickOption('cooperate')}>
+          <OptionContainer>
             <Option>
-              <input
+              <OptionText style={{ backgroundColor: 'blue' }}>
+                cooperate
+              </OptionText>
+            </Option>
+            <OptionImageContainer>
+              <Input
                 type='radio'
                 id='answer1'
                 name='decision'
                 value='cooperate'
-                checked={selectedOption === 'cooperate'}
-                onChange={() => handleClickOption('cooperate')}
+                required
               />
-              <OptionText style={{ color: 'blue' }}>cooperate</OptionText>
-            </Option>
-            <OptionImageContainer>
               <OptionImage
                 id='answer1'
                 src='https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/cooperate.jpg'
@@ -206,7 +268,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
                 height='100px'
               />
               <Circle
-                isSelected={selectedOption === 'cooperate'}
+                id='option-cooperate'
                 width='100'
                 height='100'
                 xmlns='http://www.w3.org/2000/svg'
@@ -217,25 +279,24 @@ const GameTheoryForm = ({ lastSubmission }) => {
                   r='40'
                   fill='none'
                   stroke='blue'
-                  stroke-width='2'
+                  strokeWidth='2'
                 />
               </Circle>
             </OptionImageContainer>
           </OptionContainer>
           <Text>or</Text>
-          <OptionContainer onClick={() => handleClickOption('betray')}>
+          <OptionContainer>
             <Option>
-              <input
+              <OptionText style={{ backgroundColor: 'red' }}>betray</OptionText>
+            </Option>
+            <OptionImageContainer>
+              <Input
                 type='radio'
                 id='answer2'
                 name='decision'
                 value='betray'
-                checked={selectedOption === 'betray'}
-                onChange={() => handleClickOption('betray')}
+                required
               />
-              <OptionText style={{ color: 'red' }}>betray</OptionText>
-            </Option>
-            <OptionImageContainer>
               <OptionImage
                 id='answer2'
                 src='https://lmgbcuolwhkqoowxnaik.supabase.co/storage/v1/object/public/gametheory/betray.jpg'
@@ -244,7 +305,8 @@ const GameTheoryForm = ({ lastSubmission }) => {
                 height='100px'
               />
               <Circle
-                isSelected={selectedOption === 'betray'}
+                id='option-betray'
+                // $isSelected={selectedOption === 'betray'}
                 width='100'
                 height='100'
                 xmlns='http://www.w3.org/2000/svg'
@@ -255,7 +317,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
                   r='40'
                   fill='none'
                   stroke='red'
-                  stroke-width='2'
+                  strokeWidth='2'
                 />
               </Circle>
             </OptionImageContainer>

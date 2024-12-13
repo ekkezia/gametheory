@@ -1,18 +1,25 @@
-import { useState } from "react";
-import Background from "./components/background";
-import Footer from "./components/footer";
-import SubmitContext from "./contexts/submit-context";
-import useSWR from "swr";
-import axiosInstance from "./axios/config";
-import styled from "styled-components";
+import { useState } from 'react';
+import Background from './components/background';
+import Footer from './components/footer';
+import SubmitContext from './contexts/submit-context';
+import useSWR from 'swr';
+// import axiosInstance from "./axios/config";
+import styled from 'styled-components';
+import { supabase } from './supabase/config';
 
-const fetcher = (url) =>
-  axiosInstance
-    .get(url, { headers: { "Cache-Control": "no-cache" } })
-    .then((res) => res.data);
+// const fetcher = (url) =>
+//   axiosInstance
+//     .get(url, { headers: { "Cache-Control": "no-cache" } })
+//     .then((res) => res.data);
+
+const fetcher = async () => {
+  const { data, error } = await supabase.from('gametheory').select('*');
+  if (error) throw new Error(error.message);
+  return data;
+};
 
 const StyledImageContainer = styled.div`
-  display: ${(props) => (props.$display ? "flex" : "none")};
+  display: ${(props) => (props.$display ? 'flex' : 'none')};
   position: fixed;
   top: 0;
   left: 0;
@@ -33,7 +40,10 @@ const StyledImage = styled.img`
 `;
 
 export default function Page() {
-  const { data, isValidating } = useSWR("/", fetcher);
+  const { data, isValidating } = useSWR(
+    '/', // Query key
+    fetcher,
+  );
 
   const [hadSubmitted, setHadSubmitted] = useState(false);
   const [image, setImage] = useState(null);

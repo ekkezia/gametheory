@@ -4,8 +4,10 @@
     "private": true,
     "proxy": "https://gametheory-backend.onrender.com",
     "dependencies": {
+        "@emotion/react": "^11.13.5",
+        "@emotion/styled": "^11.13.5",
         "@mui/material": "^5.10.9",
-        "@supabase/supabase-js": "^2.45.1",
+        "@supabase/supabase-js": "^2.47.6",
         "@testing-library/jest-dom": "^5.16.3",
         "@testing-library/react": "^12.1.4",
         "@testing-library/user-event": "^13.5.0",

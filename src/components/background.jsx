@@ -40,12 +40,6 @@ const StyledImage = styled.img`
   object-fit: cover;
 `;
 
-const StyledLink = styled.a`
-  width: 100%;
-  height: 100%;
-  display: inline-block;
-`;
-
 const TooltipText = styled.p`
   font-size: 1rem;
 `;

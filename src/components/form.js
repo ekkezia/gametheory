@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import { RULES } from '../shared';
 import { mutate } from 'swr';
 import { supabase } from '../supabase/config';
 

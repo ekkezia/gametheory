@@ -133,17 +133,27 @@ const GameTheoryForm = ({ lastSubmission }) => {
 
   const [loading, setLoading] = useState('idle');
 
+  // original gameplay according to game theory, but it doesnt look as good in the visual
+  // const getGameResult = (currDecision) => {
+  //   let lastSubmissionResult = lastSubmission.gameresult;
+  //   if (lastSubmission.decision === 'cooperate') {
+  //     if (currDecision === 'cooperate') return lastSubmissionResult + RULES.c_c;
+  //     else if (currDecision === 'betray')
+  //       return lastSubmissionResult + RULES.c_b;
+  //   } else if (lastSubmission.decision === 'betray') {
+  //     if (currDecision === 'cooperate') return lastSubmissionResult + RULES.b_c;
+  //     else if (currDecision === 'betray')
+  //       return lastSubmissionResult + RULES.b_b;
+  //   }
+  // };
+
+  // simplified game result
+  // cooperate +1
+  // betray -1
   const getGameResult = (currDecision) => {
-    let lastSubmissionResult = lastSubmission.gameresult;
-    if (lastSubmission.decision === 'cooperate') {
-      if (currDecision === 'cooperate') return lastSubmissionResult + RULES.c_c;
-      else if (currDecision === 'betray')
-        return lastSubmissionResult + RULES.c_b;
-    } else if (lastSubmission.decision === 'betray') {
-      if (currDecision === 'cooperate') return lastSubmissionResult + RULES.b_c;
-      else if (currDecision === 'betray')
-        return lastSubmissionResult + RULES.b_b;
-    }
+      let lastSubmissionResult = lastSubmission.gameresult;
+      if (currDecision === 'cooperate') return lastSubmissionResult + 1;
+      else return lastSubmissionResult - 1;
   };
 
   const handleSubmit = async (event) => {

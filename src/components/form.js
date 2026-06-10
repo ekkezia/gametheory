@@ -300,8 +300,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
           name: formData.name,
           decision: formData.decision,
           gameresult: getGameResult(formData.decision),
-          decision_time_ms: telemetry.decision_time_ms,
-          decision_change_count: telemetry.decision_change_count,
+          ...telemetryWithLocation,
         };
 
         let { data, error } = await supabase
@@ -311,10 +310,12 @@ const GameTheoryForm = ({ lastSubmission }) => {
 
         if (
           error &&
-          /decision_(time_ms|change_count)/.test(error.message ?? '')
+          /(prediction|decision_time_ms|decision_change_count|location_status|location_latitude|location_longitude)/.test(
+            error.message ?? '',
+          )
         ) {
           console.warn(
-            'Game metrics columns are unavailable; submitting without them',
+            'Game telemetry columns are unavailable; submitting without them',
           );
           ({ data, error } = await supabase
             .from('gametheory')
@@ -330,22 +331,6 @@ const GameTheoryForm = ({ lastSubmission }) => {
 
         if (error) {
           throw new Error(error.message);
-        }
-
-        const { error: telemetryError } = await supabase
-          .from('submission_telemetry')
-          .insert([
-            {
-              submission_id: data[0].id,
-              ...telemetryWithLocation,
-            },
-          ]);
-
-        if (telemetryError) {
-          console.warn(
-            'Game submitted, but telemetry was not saved',
-            telemetryError,
-          );
         }
 
         console.log('Successfully submitted', data);
@@ -563,7 +548,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
           </PredictionOptions>
         </PredictionContainer>
         <LocationOption>
-          <input type='checkbox' name='shareLocation' />
+          <input type='checkbox' name='shareLocation' defaultChecked />
           Share my approximate location, rounded to about 1 km (optional)
         </LocationOption>
         <Button

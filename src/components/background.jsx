@@ -105,13 +105,12 @@ const Background = ({ data, loading }) => {
 										) : (
 											<>
 												changed their decision {data[idx].decision_change_count}{' '}
-												{data[idx].decision_change_count === 1} x&nbsp;
-												and took&nbsp;
+												x and took&nbsp;
 												{formatDecisionTime(data[idx].decision_time_ms)
-													? ` over ${formatDecisionTime(
+													? formatDecisionTime(
 															data[idx].decision_time_ms,
-														)}`
-													: ''}
+														)
+													: 'an unrecorded amount of time'}
 												&nbsp;before choosing to&nbsp;
 											</>
 										)}
@@ -133,6 +132,14 @@ const Background = ({ data, loading }) => {
 										at&nbsp;
 										<em>{new Date(data[idx].time).toLocaleString('en-US')}</em>
 									</TooltipLine>
+									{data[idx].location_status === 'shared' &&
+										data[idx].location_latitude != null &&
+										data[idx].location_longitude != null && (
+											<TooltipLine>
+												near {data[idx].location_latitude},{' '}
+												{data[idx].location_longitude}
+											</TooltipLine>
+										)}
 								</TooltipText>
 							}
 							followCursor
@@ -186,6 +193,15 @@ Background.propTypes = {
 			gameresult: PropTypes.number.isRequired,
 			decision_time_ms: PropTypes.number,
 			decision_change_count: PropTypes.number,
+			prediction: PropTypes.oneOf(['betray', 'cooperate']),
+			location_status: PropTypes.oneOf([
+				'not_requested',
+				'shared',
+				'denied',
+				'unavailable',
+			]),
+			location_latitude: PropTypes.number,
+			location_longitude: PropTypes.number,
 			time: PropTypes.any, // This can be refined depending on what 'time' is
 		}),
 	),

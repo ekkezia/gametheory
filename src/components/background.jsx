@@ -140,8 +140,7 @@ const Background = ({ data, loading }) => {
 										{data[idx].location_status === 'shared' &&
 										data[idx].location_latitude != null &&
 										data[idx].location_longitude != null
-											? `near ${data[idx].location_latitude}, ${data[idx].location_longitude}`
-											: 'location not shared'}
+											&& `at ${data[idx].location_latitude}, ${data[idx].location_longitude}`}
 									</TooltipLine>
 								</TooltipText>
 							}

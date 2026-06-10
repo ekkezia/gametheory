@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { mutate } from 'swr';
@@ -112,6 +112,68 @@ const OptionText = styled.div`
   }
 `;
 
+const PredictionContainer = styled.fieldset`
+  border: 0;
+  margin: 16px 0 0;
+  padding: 0;
+`;
+
+const PredictionOptions = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+`;
+
+const PredictionOption = styled.label`
+  position: relative;
+  display: flex;
+  width: 80px;
+  height: 72px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+`;
+
+const PredictionInput = styled.input`
+  position: absolute;
+  opacity: 0;
+
+  &:checked ~ svg {
+    opacity: 1;
+  }
+`;
+
+const PredictionChoice = styled.span`
+  position: relative;
+  z-index: 1;
+  padding: 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: ${(props) => props.$color};
+`;
+
+const PredictionCircle = styled.svg`
+  position: absolute;
+  opacity: 0;
+
+  ${PredictionOption}:hover & {
+    opacity: 0.3;
+  }
+`;
+
+const LocationOption = styled.label`
+  display: block;
+  margin-top: 12px;
+  color: #7a7a7a;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  input {
+    margin-right: 4px;
+  }
+`;
+
 const WarningText = styled.div`
   position: absolute;
   top: 0;
@@ -121,6 +183,10 @@ const WarningText = styled.div`
 `;
 
 const GameTheoryForm = ({ lastSubmission }) => {
+  const decisionStartedAt = useRef(null);
+  const decisionChangeCount = useRef(0);
+  const selectedDecision = useRef(null);
+
   const checkLocalStorage =
     typeof window !== 'undefined'
       ? localStorage.getItem('username_is_submitted')
@@ -130,6 +196,53 @@ const GameTheoryForm = ({ lastSubmission }) => {
     useState(checkLocalStorage);
 
   const [loading, setLoading] = useState('idle');
+
+  const startDecisionTimer = () => {
+    if (!decisionStartedAt.current) {
+      decisionStartedAt.current = Date.now();
+    }
+  };
+
+  const handleDecisionChange = (value) => {
+    if (selectedDecision.current && selectedDecision.current !== value) {
+      decisionChangeCount.current += 1;
+    }
+
+    selectedDecision.current = value;
+  };
+
+  const getApproximateLocation = (shouldShareLocation) =>
+    new Promise((resolve) => {
+      if (!shouldShareLocation) {
+        resolve({ status: 'not_requested' });
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        resolve({ status: 'unavailable' });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          resolve({
+            status: 'shared',
+            latitude: Number(coords.latitude.toFixed(2)),
+            longitude: Number(coords.longitude.toFixed(2)),
+          });
+        },
+        ({ code }) => {
+          resolve({
+            status: code === 1 ? 'denied' : 'unavailable',
+          });
+        },
+        {
+          enableHighAccuracy: false,
+          maximumAge: 10 * 60 * 1000,
+          timeout: 5000,
+        },
+      );
+    });
 
   // original gameplay according to game theory, but it doesnt look as good in the visual
   // const getGameResult = (currDecision) => {
@@ -157,25 +270,82 @@ const GameTheoryForm = ({ lastSubmission }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const form = document.querySelector('form');
-    const formData = Object.fromEntries(new FormData(form).entries());
+    const formData = Object.fromEntries(
+      new FormData(event.currentTarget).entries(),
+    );
     if (formData && formData.decision !== null) {
       setLoading('loading');
 
       try {
-        const { data, error } = await supabase
+        const telemetry = {
+          prediction: formData.prediction,
+          decision_time_ms: decisionStartedAt.current
+            ? Date.now() - decisionStartedAt.current
+            : 0,
+          decision_change_count: decisionChangeCount.current,
+        };
+        const location = await getApproximateLocation(
+          formData.shareLocation === 'on',
+        );
+        const telemetryWithLocation = {
+          ...telemetry,
+          location_status: location.status,
+          location_latitude: location.latitude ?? null,
+          location_longitude: location.longitude ?? null,
+        };
+
+        console.info('Submission telemetry', telemetryWithLocation);
+
+        const gameSubmission = {
+          name: formData.name,
+          decision: formData.decision,
+          gameresult: getGameResult(formData.decision),
+          decision_time_ms: telemetry.decision_time_ms,
+          decision_change_count: telemetry.decision_change_count,
+        };
+
+        let { data, error } = await supabase
           .from('gametheory')
-          .insert([
-            {
-              name: formData.name,
-              decision: formData.decision,
-              gameresult: getGameResult(formData.decision),
-            },
-          ])
+          .insert([gameSubmission])
           .select();
+
+        if (
+          error &&
+          /decision_(time_ms|change_count)/.test(error.message ?? '')
+        ) {
+          console.warn(
+            'Game metrics columns are unavailable; submitting without them',
+          );
+          ({ data, error } = await supabase
+            .from('gametheory')
+            .insert([
+              {
+                name: gameSubmission.name,
+                decision: gameSubmission.decision,
+                gameresult: gameSubmission.gameresult,
+              },
+            ])
+            .select());
+        }
 
         if (error) {
           throw new Error(error.message);
+        }
+
+        const { error: telemetryError } = await supabase
+          .from('submission_telemetry')
+          .insert([
+            {
+              submission_id: data[0].id,
+              ...telemetryWithLocation,
+            },
+          ]);
+
+        if (telemetryError) {
+          console.warn(
+            'Game submitted, but telemetry was not saved',
+            telemetryError,
+          );
         }
 
         console.log('Successfully submitted', data);
@@ -215,7 +385,13 @@ const GameTheoryForm = ({ lastSubmission }) => {
   };
 
   return (
-    <FormContainer id='game-theory' method='post' onSubmit={handleSubmit}>
+    <FormContainer
+      id='game-theory'
+      method='post'
+      onFocusCapture={startDecisionTimer}
+      onPointerDown={startDecisionTimer}
+      onSubmit={handleSubmit}
+    >
       {userAlreadySubmitted && (
         <WarningText>
           you already submitted! take turn with others please.. share it on your
@@ -266,6 +442,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
                 id='answer1'
                 name='decision'
                 value='cooperate'
+                onChange={() => handleDecisionChange('cooperate')}
                 required
               />
               <OptionImage
@@ -303,6 +480,7 @@ const GameTheoryForm = ({ lastSubmission }) => {
                 id='answer2'
                 name='decision'
                 value='betray'
+                onChange={() => handleDecisionChange('betray')}
                 required
               />
               <OptionImage
@@ -331,6 +509,63 @@ const GameTheoryForm = ({ lastSubmission }) => {
             </OptionImageContainer>
           </OptionContainer>
         </div>
+        <PredictionContainer>
+          <Text as='legend'>What do you think most people will choose?</Text>
+          <PredictionOptions>
+            <PredictionOption>
+              <PredictionInput
+                type='radio'
+                name='prediction'
+                value='cooperate'
+                required
+              />
+              <PredictionChoice $color='blue'>cooperate</PredictionChoice>
+              <PredictionCircle
+                width='72'
+                height='72'
+                viewBox='0 0 72 72'
+                aria-hidden='true'
+              >
+                <circle
+                  cx='36'
+                  cy='36'
+                  r='30'
+                  fill='none'
+                  stroke='blue'
+                  strokeWidth='2'
+                />
+              </PredictionCircle>
+            </PredictionOption>
+            <PredictionOption>
+              <PredictionInput
+                type='radio'
+                name='prediction'
+                value='betray'
+                required
+              />
+              <PredictionChoice $color='red'>betray</PredictionChoice>
+              <PredictionCircle
+                width='72'
+                height='72'
+                viewBox='0 0 72 72'
+                aria-hidden='true'
+              >
+                <circle
+                  cx='36'
+                  cy='36'
+                  r='30'
+                  fill='none'
+                  stroke='red'
+                  strokeWidth='2'
+                />
+              </PredictionCircle>
+            </PredictionOption>
+          </PredictionOptions>
+        </PredictionContainer>
+        <LocationOption>
+          <input type='checkbox' name='shareLocation' />
+          Share my approximate location, rounded to about 1 km (optional)
+        </LocationOption>
         <Button
           type='submit'
           disabled={userAlreadySubmitted || loading !== 'idle'}

@@ -1,4 +1,4 @@
-export const TITLE_CONTAINER = '20vh';
+export const TITLE_CONTAINER = '12vh';
 // export const TRANSLATE = { default: "80vh", hover: "40vh" };
 export const TRANSLATE = '80vh';
 export const TRANSLATE_HOVER = '40vh';

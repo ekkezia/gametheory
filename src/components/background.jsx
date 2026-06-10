@@ -85,6 +85,8 @@ const Background = ({ data, loading }) => {
 		return Math.abs((imageNo + equilibrium) % PICS_OPTIONS.length);
 	};
 
+	const getPreviousSubmission = (idx) => data?.[idx - 1];
+
 	return (
 		<Container $hadSubmitted={hadSubmitted}>
 			{[...Array(NUMBER_OF_ITEMS)].map((_, idx) => (
@@ -118,11 +120,13 @@ const Background = ({ data, loading }) => {
 											{data[idx].decision}
 										</DecisionSpan>
 										&nbsp;in response to&nbsp;
-										{idx !== 0 ? (
+										{getPreviousSubmission(idx) ? (
 											<TooltipLink
-												href={`https://instagram.com/${data[idx - 1].name}`}
+												href={`https://instagram.com/${
+													getPreviousSubmission(idx).name
+												}`}
 											>
-												{data[idx - 1].name}
+												{getPreviousSubmission(idx).name}
 											</TooltipLink>
 										) : (
 											'NONE'
@@ -132,14 +136,13 @@ const Background = ({ data, loading }) => {
 										at&nbsp;
 										<em>{new Date(data[idx].time).toLocaleString('en-US')}</em>
 									</TooltipLine>
-									{data[idx].location_status === 'shared' &&
+									<TooltipLine>
+										{data[idx].location_status === 'shared' &&
 										data[idx].location_latitude != null &&
-										data[idx].location_longitude != null && (
-											<TooltipLine>
-												near {data[idx].location_latitude},{' '}
-												{data[idx].location_longitude}
-											</TooltipLine>
-										)}
+										data[idx].location_longitude != null
+											? `near ${data[idx].location_latitude}, ${data[idx].location_longitude}`
+											: 'location not shared'}
+									</TooltipLine>
 								</TooltipText>
 							}
 							followCursor
@@ -153,7 +156,7 @@ const Background = ({ data, loading }) => {
 									PICS_OPTIONS[calculateImageNumber(data[idx].gameresult) ?? 0]
 								}
 								alt={`pic-${idx + 1}-${data[idx].decision}-${
-									idx !== 0 ? data[idx].name : ''
+									getPreviousSubmission(idx)?.name ?? ''
 								}-${calculateImageNumber(data[idx].gameresult)}`}
 								onClick={() =>
 									setImage(

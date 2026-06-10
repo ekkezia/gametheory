@@ -13,7 +13,10 @@ import { supabase } from './supabase/config';
 //     .then((res) => res.data);
 
 const fetcher = async () => {
-  const { data, error } = await supabase.from('gametheory').select('*');
+  const { data, error } = await supabase
+    .from('gametheory')
+    .select('*')
+    .order('id', { ascending: true });
   if (error) throw new Error(error.message);
   return data;
 };

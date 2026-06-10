@@ -105,9 +105,7 @@ const Background = ({ data, loading }) => {
 										) : (
 											<>
 												changed their decision {data[idx].decision_change_count}{' '}
-												{data[idx].decision_change_count === 1
-													? 'time'
-													: 'times'}
+												{data[idx].decision_change_count === 1} x&nbsp;
 												and took&nbsp;
 												{formatDecisionTime(data[idx].decision_time_ms)
 													? ` over ${formatDecisionTime(

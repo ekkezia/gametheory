@@ -4,7 +4,7 @@ import GameTheoryForm from './form';
 import styled from 'styled-components';
 import { CARD_WIDTH, CARD_WIDTH_SM } from '../shared';
 
-export const TITLE_HEIGHT = '12vh';
+export const TITLE_HEIGHT = '8vh';
 
 const Container = styled.div`
   position: relative;
